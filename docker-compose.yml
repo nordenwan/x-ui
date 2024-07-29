@@ -1,10 +1,30 @@
-version: "3.9"
+version: "3.8"
 services:
-  xui:
-    image: enwaiax/x-ui
-    container_name: xui
+  x-ui:
+    image: enwaiax/x-ui:alpha-zh
+    restart: always
+    networks:
+      - dokploy-network
+    ports:
+      - "${X_UI_PORT}:54321"
+      #- "${XRAY_PORT}:${XRAY_PORT}"  # 新增这一行
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.${HASH}.rule=Host(`${X_UI_HOST}`)
+      - traefik.http.services.${HASH}.loadbalancer.server.port=54321
+      - traefik.http.services.${HASH}.loadbalancer.server.port=${X_UI_PORT}
+    environment:
+      - X_UI_HOST=${X_UI_HOST}
+      - XRAY_VMESS_AEAD_FORCED=false
+      #- XRAY_PORT=${XRAY_PORT}  # 新增这一行
     volumes:
-      - $PWD/db/:/etc/x-ui/
-      - $PWD/cert/:/root/cert/
-    restart: unless-stopped
-    network_mode: host
+      - x_ui_config:/etc/x-ui
+      - x_ui_db:/usr/share/x-ui/db
+    #command: ["/bin/sh", "-c", "x-ui start && xray -config /usr/local/x-ui/bin/config.json"]  # 新增这一行
+
+volumes:
+  x_ui_config:
+  x_ui_db:
+networks:
+  dokploy-network:
+    external: true
